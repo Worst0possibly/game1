@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H2E - Snake</title>
+    <style>
+:root {
+  --bg: #ebebeb;
+  --black: #000000;
+  --grey-dark: #333333;
+  --grey-mid: #666666;
+  --grey-light: #999999;
+  --grey-border: #b3b3b3;
+  --grid-line: #dcdcdc;
+  --food-blue: #2563eb;
+  --radius: 14px;
+  --shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--black);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.app {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.topbar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.panel {
+  background: var(--bg);
+  border: 1px solid var(--grey-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.scores {
+  gap: 18px;
+}
+.score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 56px;
+}
+.divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--grey-border);
+}
+.timer {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+.label {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--grey-mid);
+}
+.value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--black);
+}
+#breakTimer {
+  font-variant-numeric: tabular-nums;
+}
+.game-wrap {
+  display: flex;
+  justify-content: center;
+}
+.canvas-shell {
+  position: relative;
+  border: 1px solid var(--grey-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  background: var(--bg);
+  padding: 10px;
+}
+canvas {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  border-radius: 8px;
+  background: var(--bg);
+}
+.overlay {
+  position: absolute;
+  inset: 10px;
+  border-radius: 8px;
+  background: rgba(235, 235, 235, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+.overlay p {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--grey-dark);
+  letter-spacing: 0.05em;
+}
+.hidden {
+  display: none !important;
+}
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: var(--black);
+  color: var(--bg);
+  border: 1px solid var(--grey-border);
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.15s ease;
+}
+.btn:hover {
+  background: var(--grey-dark);
+}
+.btn:active {
+  transform: scale(0.96);
+}
+.hint {
+  text-align: center;
+  font-size: 12px;
+  color: var(--grey-mid);
+}
+.popup-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.popup {
+  background: var(--bg);
+  border: 1px solid var(--grey-border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  padding: 32px 36px;
+  min-width: 280px;
+  max-width: 90vw;
+  text-align: center;
+  animation: fadeInPopup 0.3s ease forwards;
+}
+@keyframes fadeInPopup {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.popup h2 {
+  font-size: 24px;
+  color: var(--black);
+  margin-bottom: 16px;
+}
+.popup-message {
+  color: var(--grey-dark);
+  font-size: 15px;
+  line-height: 1.5;
+  max-width: 320px;
+}
+.popup-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-bottom: 24px;
+}
+.popup-stats > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.popup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+  .topbar {
+    flex-direction: column;
+    align-items: center;
+  }
+  .panel {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media screen and (max-width: 1024px) {
+  body {
+    padding: 16px;
+  }
+
+  .app {
+    max-width: 480px;
+  }
+
+  canvas {
+    max-width: 420px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  body {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .app {
+    max-width: 100%;
+    gap: 12px;
+  }
+
+  .panel {
+    padding: 8px 14px;
+  }
+
+  .label {
+    font-size: 10px;
+  }
+
+  .value {
+    font-size: 18px;
+  }
+
+  canvas {
+    max-width: 100%;
+  }
+
+  .canvas-shell {
+    padding: 8px;
+  }
+
+  .btn {
+    padding: 12px 18px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .controls {
+    gap: 8px;
+  }
+
+  .hint {
+    font-size: 11px;
+    padding: 0 8px;
+  }
+
+  .popup {
+    padding: 24px 20px;
+    min-width: 0;
+    width: min(90vw, 340px);
+  }
+
+  .popup h2 {
+    font-size: 20px;
+  }
+
+  .popup-stats {
+    gap: 24px;
+  }
+
+  .popup-message {
+    font-size: 14px;
+    max-width: 100%;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  body {
+    padding: 8px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  .scores {
+    gap: 24px;
+  }
+
+  .score-block {
+    min-width: 48px;
+  }
+
+  .timer {
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .canvas-shell {
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .overlay {
+    inset: 6px;
+  }
+
+  .overlay p {
+    font-size: 18px;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .btn {
+    flex: 1 1 calc(50% - 6px);
+    padding: 12px 10px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .popup {
+    padding: 20px 16px;
+    width: 92vw;
+  }
+
+  .popup h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+
+  .popup-stats {
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .popup-actions {
+    gap: 8px;
+  }
+
+  .popup-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media screen and (max-width: 360px) {
+  .value {
+    font-size: 16px;
+  }
+
+  .label {
+    font-size: 9px;
+  }
+
+  .btn {
+    font-size: 12px;
+    padding: 10px 8px;
+  }
+
+  .popup h2 {
+    font-size: 16px;
+  }
+}
+.touch-controls {
+  display: none;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 56px);
+  gap: 6px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.touch-controls .tbtn {
+  background: var(--black);
+  color: var(--bg);
+  border: 1px solid var(--grey-border);
+  border-radius: 10px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.touch-controls .tbtn:active {
+  background: var(--grey-dark);
+}
+.touch-controls .tbtn.up { grid-column: 2; grid-row: 1; }
+.touch-controls .tbtn.left { grid-column: 1; grid-row: 2; }
+.touch-controls .tbtn.pause-mid { grid-column: 2; grid-row: 2; font-size: 14px; }
+.touch-controls .tbtn.right { grid-column: 3; grid-row: 2; }
+.touch-controls .tbtn.down { grid-column: 2; grid-row: 3; }
+
+@media (max-width: 768px), (pointer: coarse) {
+  .touch-controls {
+    display: grid;
+  }
+}
+    </style>
+</head>
+<body>
+    <div class="app">
+    <header class="topbar">
+      <div class="panel scores">
+        <div class="score-block">
+          <span class="label">Score</span>
+          <span class="value" id="currentScore">0</span>
+        </div>
+        <div class="divider"></div>
+        <div class="score-block">
+          <span class="label">Best</span>
+          <span class="value" id="bestScore">0</span>
+        </div>
+      </div>
+      <div class="panel timer">
+        <span class="label">Break Ends In</span>
+        <span class="value" id="breakTimer">10:00</span>
+      </div>
+    </header>
+    <main class="game-wrap">
+      <div class="canvas-shell">
+        <canvas id="gameCanvas" width="480" height="480"></canvas>
+        <div class="overlay hidden" id="pauseOverlay">
+          <p>Paused</p>
+        </div>
+      </div>
+    </main>
+    <footer class="controls">
+      <button class="btn" id="pauseBtn">Pause</button>
+      <button class="btn" id="resumeBtn">Resume</button>
+      <button class="btn" id="restartBtn">Restart</button>
+      <button class="btn" id="exitBtn">Exit</button>
+    </footer>
+    <div class="touch-controls" id="touchControls">
+  <button class="tbtn up" type="button" data-dir="up" aria-label="Up">&#8593;</button>
+  <button class="tbtn left" type="button" data-dir="left" aria-label="Left">&#8592;</button>
+  <button class="tbtn pause-mid" type="button" data-dir="pause" aria-label="Pause">&#10073;&#10073;</button>
+  <button class="tbtn right" type="button" data-dir="right" aria-label="Right">&#8594;</button>
+  <button class="tbtn down" type="button" data-dir="down" aria-label="Down">&#8595;</button>
+</div>
+    <p class="hint">Move: Arrow Keys / WASD &nbsp;•&nbsp; Pause-Resume: Spacebar</p>
+  </div>
+  <div class="popup-backdrop hidden" id="gameOverBackdrop">
+    <div class="popup" id="gameOverPopup">
+      <h2>Game Over</h2>
+      <div class="popup-stats">
+        <div>
+          <span class="label">Final Score</span>
+          <span class="value" id="finalScore">0</span>
+        </div>
+        <div>
+          <span class="label">Best Score</span>
+          <span class="value" id="finalBest">0</span>
+        </div>
+      </div>
+      <div class="popup-actions">
+        <button class="btn" id="playAgainBtn">Play Again</button>
+        <button class="btn" id="exitBtn2">Exit</button>
+      </div>
+    </div>
+  </div>
+  <div class="popup-backdrop hidden" id="breakOverBackdrop">
+    <div class="popup" id="breakOverPopup">
+      <h2>Break Time Over!</h2>
+      <p class="popup-message">Hope you enjoyed your break. Time to get back to studying!</p>
+    </div>
+  </div>
+<script type="text/javascript" defer>
+(() => {
+  "use strict";
+  const CONFIG = {
+    gridSize: 24,          
+    tickMs: 110,          
+    breakDurationSec: 10 * 60,
+    startLength: 3,
+  };
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const currentScoreEl = document.getElementById("currentScore");
+  const bestScoreEl = document.getElementById("bestScore");
+  const breakTimerEl = document.getElementById("breakTimer");
+  const pauseOverlay = document.getElementById("pauseOverlay");
+  const pauseBtn = document.getElementById("pauseBtn");
+  const resumeBtn = document.getElementById("resumeBtn");
+  const restartBtn = document.getElementById("restartBtn");
+  const exitBtn = document.getElementById("exitBtn");
+  const exitBtn2 = document.getElementById("exitBtn2");
+  const playAgainBtn = document.getElementById("playAgainBtn");
+  const gameOverBackdrop = document.getElementById("gameOverBackdrop");
+  const finalScoreEl = document.getElementById("finalScore");
+  const finalBestEl = document.getElementById("finalBest");
+  const breakOverBackdrop = document.getElementById("breakOverBackdrop");
+  const CELL = canvas.width / CONFIG.gridSize;
+  let snake = [];
+  let direction = { x: 1, y: 0 };
+  let pendingDirection = { x: 1, y: 0 };
+  let food = null;
+  let score = 0;
+  let bestScore = Number(localStorage.getItem("snakeBestScore")) || 0;
+  let isPaused = false;
+  let isGameOver = false;
+  let lastTickTime = 0;
+  let animationFrameId = null;
+  let foodScale = 1;
+  let foodPopTimer = 0;
+  bestScoreEl.textContent = bestScore;
+  const BreakTimer = (() => {
+    const STORAGE_KEY = "snakeBreakEndsAt"; // stores an absolute end timestamp (ms)
+    let remainingSec = CONFIG.breakDurationSec;
+    let intervalId = null;
+    function format(sec) {
+      const m = Math.floor(sec / 60).toString().padStart(2, "0");
+      const s = Math.floor(sec % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    }
+    function render() {
+      breakTimerEl.textContent = format(remainingSec);
+    }
+    function tick() {
+      if (isPaused || isGameOver) return; // don't drain while paused/over
+      const endsAt = Number(localStorage.getItem(STORAGE_KEY));
+      remainingSec = Math.max(0, Math.round((endsAt - Date.now()) / 1000));
+      if (remainingSec <= 0) {
+        render();
+        stop();
+        onBreakOver();
+        return;
+      }
+      render();
+    }
+    function start(durationSec = CONFIG.breakDurationSec) {
+      const endsAt = Date.now() + durationSec * 1000;
+      localStorage.setItem(STORAGE_KEY, String(endsAt));
+      remainingSec = durationSec;
+      render();
+      stop();
+      intervalId = setInterval(tick, 1000);
+    }
+    function init(durationSec = CONFIG.breakDurationSec) {
+      const storedEndsAt = Number(localStorage.getItem(STORAGE_KEY));
+      if (storedEndsAt && storedEndsAt > Date.now()) {
+        remainingSec = Math.round((storedEndsAt - Date.now()) / 1000);
+        render();
+        stop();
+        intervalId = setInterval(tick, 1000);
+      } else {
+        start(durationSec);
+      }
+    }
+    function stop() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+    function onBreakOver() {
+      localStorage.removeItem(STORAGE_KEY);
+      pauseGame(true);
+      breakOverBackdrop.classList.remove("hidden");
+      setTimeout(() => {
+        window.location.href = document.referrer || "javascript:history.back()";
+      }, 2000);
+    }
+    return { start, stop, init };
+  })();
+  function initGame() {
+    const mid = Math.floor(CONFIG.gridSize / 2);
+    snake = [];
+    for (let i = 0; i < CONFIG.startLength; i++) {
+      snake.push({ x: mid - i, y: mid });
+    }
+    direction = { x: 1, y: 0 };
+    pendingDirection = { x: 1, y: 0 };
+    score = 0;
+    isPaused = false;
+    isGameOver = false;
+    currentScoreEl.textContent = score;
+    pauseOverlay.classList.add("hidden");
+    gameOverBackdrop.classList.add("hidden");
+    spawnFood();
+    lastTickTime = 0;
+
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+  function spawnFood() {
+    let candidate;
+    do {
+      candidate = {
+        x: Math.floor(Math.random() * CONFIG.gridSize),
+        y: Math.floor(Math.random() * CONFIG.gridSize),
+      };
+    } while (snake.some(seg => seg.x === candidate.x && seg.y === candidate.y));
+    food = candidate;
+    foodScale = 0;
+  }
+  function gameLoop(timestamp) {
+    animationFrameId = requestAnimationFrame(gameLoop);
+    if (foodScale < 1) {
+      foodScale = Math.min(1, foodScale + 0.12);
+    }
+    if (isPaused || isGameOver) {
+      draw();
+      return;
+    }
+    if (timestamp - lastTickTime >= CONFIG.tickMs) {
+      lastTickTime = timestamp;
+      update();
+    }
+    draw();
+  }
+  function update() {
+    direction = pendingDirection;
+
+    const head = snake[0];
+    const newHead = { x: head.x + direction.x, y: head.y + direction.y };
+    if (
+      newHead.x < 0 ||
+      newHead.x >= CONFIG.gridSize ||
+      newHead.y < 0 ||
+      newHead.y >= CONFIG.gridSize
+    ) {
+      return endGame();
+    }
+    if (snake.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
+      return endGame();
+    }
+    snake.unshift(newHead);
+    if (food && newHead.x === food.x && newHead.y === food.y) {
+      score++;
+      currentScoreEl.textContent = score;
+      spawnFood();
+    } else {
+      snake.pop();
+    }
+  }
+  function draw() {
+    // Background
+    ctx.fillStyle = "#ebebeb";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawFood();
+    drawSnake();
+  }
+  function drawGrid() {
+    ctx.strokeStyle = "#dcdcdc";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= CONFIG.gridSize; i++) {
+      const pos = i * CELL;
+      ctx.beginPath();
+      ctx.moveTo(pos, 0);
+      ctx.lineTo(pos, canvas.height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, pos);
+      ctx.lineTo(canvas.width, pos);
+      ctx.stroke();
+    }
+  }
+  function drawFood() {
+    if (!food) return;
+    const cx = food.x * CELL + CELL / 2;
+    const cy = food.y * CELL + CELL / 2;
+    const radius = (CELL / 2 - 3) * foodScale;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(radius, 0), 0, Math.PI * 2);
+    ctx.fillStyle = "#0d0d0d";
+    ctx.fill();
+    if (radius > 2) {
+      ctx.beginPath();
+      ctx.arc(cx - radius * 0.3, cy - radius * 0.3, radius * 0.28, 0, Math.PI * 2);
+      ctx.fillStyle = "#f0f8ff";
+      ctx.fill();
+    }
+  }
+  function drawSnake() {
+    snake.forEach((segment, index) => {
+      const x = segment.x * CELL;
+      const y = segment.y * CELL;
+      const isHead = index === 0;
+      const size = isHead ? CELL - 2 : CELL - 4;
+      const offset = isHead ? 1 : 2;
+      ctx.fillStyle = isHead ? "#1a1a1a" : "#4d4d4d";
+      drawRoundedRect(x + offset, y + offset, size, size, 6);
+      ctx.fill();
+      if (isHead) drawEyes(x, y);
+    });
+  }
+  function drawRoundedRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function drawEyes(x, y) {
+    const eyeRadius = 2.2;
+    ctx.fillStyle = "#ebebeb";
+    let eye1, eye2;
+    if (direction.x === 1) { // right
+      eye1 = { x: x + CELL * 0.65, y: y + CELL * 0.3 };
+      eye2 = { x: x + CELL * 0.65, y: y + CELL * 0.7 };
+    } else if (direction.x === -1) { // left
+      eye1 = { x: x + CELL * 0.35, y: y + CELL * 0.3 };
+      eye2 = { x: x + CELL * 0.35, y: y + CELL * 0.7 };
+    } else if (direction.y === -1) { // up
+      eye1 = { x: x + CELL * 0.3, y: y + CELL * 0.35 };
+      eye2 = { x: x + CELL * 0.7, y: y + CELL * 0.35 };
+    } else { // down
+      eye1 = { x: x + CELL * 0.3, y: y + CELL * 0.65 };
+      eye2 = { x: x + CELL * 0.7, y: y + CELL * 0.65 };
+    }
+    [eye1, eye2].forEach(eye => {
+      ctx.beginPath();
+      ctx.arc(eye.x, eye.y, eyeRadius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  function endGame() {
+    isGameOver = true;
+
+    if (score > bestScore) {
+      bestScore = score;
+      localStorage.setItem("snakeBestScore", String(bestScore));
+    }
+    bestScoreEl.textContent = bestScore;
+    finalScoreEl.textContent = score;
+    finalBestEl.textContent = bestScore;
+    gameOverBackdrop.classList.remove("hidden");
+  }
+  function pauseGame(force = false) {
+    if (isGameOver) return;
+    if (force || !isPaused) {
+      isPaused = true;
+      pauseOverlay.classList.remove("hidden");
+    }
+  }
+  function resumeGame() {
+    if (isGameOver) return;
+    isPaused = false;
+    pauseOverlay.classList.add("hidden");
+  }
+  function togglePause() {
+    if (isPaused) {
+      resumeGame();
+    } else {
+      pauseGame();
+    }
+  }
+  const KEY_MAP = {
+    ArrowUp: { x: 0, y: -1 },
+    ArrowDown: { x: 0, y: 1 },
+    ArrowLeft: { x: -1, y: 0 },
+    ArrowRight: { x: 1, y: 0 },
+    w: { x: 0, y: -1 },
+    s: { x: 0, y: 1 },
+    a: { x: -1, y: 0 },
+    d: { x: 1, y: 0 },
+  };
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "Space") {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+    const key = KEY_MAP[e.key];
+    if (!key) return;
+    const isReverse =
+      key.x === -direction.x && key.y === -direction.y &&
+      (key.x !== 0 || key.y !== 0);
+
+    if (!isReverse) {
+      pendingDirection = key;
+    }
+  });
+  const TOUCH_DIR_MAP = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+document.getElementById("touchControls").addEventListener("click", (e) => {
+  const btn = e.target.closest(".tbtn");
+  if (!btn) return;
+  const dir = btn.dataset.dir;
+  if (dir === "pause") {
+    togglePause();
+    return;
+  }
+  const key = TOUCH_DIR_MAP[dir];
+  if (!key) return;
+  const isReverse =
+    key.x === -direction.x && key.y === -direction.y &&
+    (key.x !== 0 || key.y !== 0);
+  if (!isReverse) {
+    pendingDirection = key;
+  }
+});
+  pauseBtn.addEventListener("click", () => pauseGame());
+  resumeBtn.addEventListener("click", () => resumeGame());
+  restartBtn.addEventListener("click", () => {
+    gameOverBackdrop.classList.add("hidden");
+    initGame();
+  });
+  playAgainBtn.addEventListener("click", () => {
+    gameOverBackdrop.classList.add("hidden");
+    initGame();
+  });
+  function exitGame() {
+    window.location.href = document.referrer || "javascript:history.back()";
+  }
+  exitBtn.addEventListener("click", exitGame);
+  exitBtn2.addEventListener("click", exitGame);
+  initGame();
+  BreakTimer.init(CONFIG.breakDurationSec);
+})();
+</script>
+</body>
+</html>
